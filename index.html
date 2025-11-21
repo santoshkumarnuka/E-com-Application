@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ModernShop - JS E-commerce</title>
+    <!-- Importing Google Fonts for better typography -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="index.css">
+</head>
+
+<body>
+    <!-- 1. HEADER & NAVIGATION -->
+    <header>
+        <a href="#" class="logo">ModernShop.</a>
+
+        <div class="cart-btn-container" onclick="toggleCart()">
+            <!-- Simple SVG Icon for Cart -->
+            <svg class="cart-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"></path>
+            </svg>
+            <div class="cart-count" id="cartCount">0</div>
+        </div>
+    </header>
+
+    <!-- 2. HERO SECTION -->
+    <div class="hero">
+        <h1>Welcome to the Future of Shopping</h1>
+        <p>Curated items just for you.</p>
+    </div>
+
+    <!-- 3. MAIN CONTENT -->
+    <div class="container">
+        <!-- Filter Buttons -->
+        <div class="filters">
+            <button class="filter-btn active" onclick="filterProducts('all')">All</button>
+            <button class="filter-btn" onclick="filterProducts('electronics')">Electronics</button>
+            <button class="filter-btn" onclick="filterProducts('fashion')">Fashion</button>
+            <button class="filter-btn" onclick="filterProducts('home')">Home</button>
+        </div>
+
+        <!-- Where products will be injected by JavaScript -->
+        <div class="product-grid" id="productGrid">
+            <!-- Loading state... -->
+            <p>Loading products...</p>
+        </div>
+    </div>
+
+    <!-- 4. CART MODAL -->
+    <div class="cart-overlay" id="cartModal">
+        <div class="cart-sidebar">
+            <div class="cart-header">
+                <h3>Your Cart</h3>
+                <button class="close-cart" onclick="toggleCart()">×</button>
+            </div>
+
+            <div class="cart-items" id="cartItems">
+                <!-- Cart items injected here -->
+                <p style="text-align:center; color:#64748b; margin-top:2rem;">Your cart is empty.</p>
+            </div>
+
+            <div class="cart-footer">
+                <div class="total-row">
+                    <span>Total:</span>
+                    <span id="cartTotal">$0.00</span>
+                </div>
+                <button class="checkout-btn" onclick="checkout()">Checkout Now</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Notification Toast -->
+    <div class="toast" id="toast">Item added to cart!</div>
+
+    <!-- 5. JAVASCRIPT LOGIC -->
+    <script>
+        // --- DATA: The Products Database ---
+        const products = [
+            {
+                id: 1,
+                name: "Wireless Noise Cancelling Headphones",
+                price: 199.99,
+                category: "electronics",
+                image: "https://placehold.co/300x250/252f3f/FFF?text=Headphones"
+            },
+            {
+                id: 2,
+                name: "Minimalist Leather Watch",
+                price: 129.50,
+                category: "fashion",
+                image: "https://placehold.co/300x250/e2e8f0/1e293b?text=Watch"
+            },
+            {
+                id: 3,
+                name: "Smart Home Assistant Hub",
+                price: 89.00,
+                category: "electronics",
+                image: "https://placehold.co/300x250/2563eb/FFF?text=Smart+Hub"
+            },
+            {
+                id: 4,
+                name: "Ergonomic Office Chair",
+                price: 249.99,
+                category: "home",
+                image: "https://placehold.co/300x250/cbd5e1/1e293b?text=Chair"
+            },
+            {
+                id: 5,
+                name: "Running Performance Sneakers",
+                price: 75.00,
+                category: "fashion",
+                image: "https://placehold.co/300x250/ef4444/FFF?text=Sneakers"
+            },
+            {
+                id: 6,
+                name: "Ceramic Coffee Set",
+                price: 45.00,
+                category: "home",
+                image: "https://placehold.co/300x250/f8fafc/000?text=Coffee+Set"
+            }
+        ];
+
+        // --- STATE: Cart Memory ---
+        let cart = [];
+
+        // --- DOM ELEMENTS ---
+        const productGrid = document.getElementById('productGrid');
+        const cartModal = document.getElementById('cartModal');
+        const cartItemsContainer = document.getElementById('cartItems');
+        const cartCountElement = document.getElementById('cartCount');
+        const cartTotalElement = document.getElementById('cartTotal');
+        const toast = document.getElementById('toast');
+
+        // --- INITIALIZATION ---
+        // Run this when the page loads
+        window.addEventListener('DOMContentLoaded', () => {
+            renderProducts('all');
+        });
+
+        // --- FUNCTION: Render Products to HTML ---
+        function renderProducts(category) {
+            productGrid.innerHTML = ''; // Clear existing content
+
+            // Filter products based on category
+            const filteredProducts = category === 'all'
+                ? products
+                : products.filter(p => p.category === category);
+
+            // Update active button style
+            document.querySelectorAll('.filter-btn').forEach(btn => {
+                btn.classList.remove('active');
+                if (btn.innerText.toLowerCase() === category || (category === 'all' && btn.innerText === 'All')) {
+                    btn.classList.add('active');
+                }
+            });
+
+            // Loop through products and create HTML
+            filteredProducts.forEach(product => {
+                const productCard = document.createElement('div');
+                productCard.className = 'product-card';
+
+                productCard.innerHTML = `
+                    <img src="${product.image}" alt="${product.name}" class="product-image">
+                    <div class="product-info">
+                        <span class="product-category">${product.category}</span>
+                        <h3 class="product-title">${product.name}</h3>
+                        <div class="product-price">$${product.price.toFixed(2)}</div>
+                        <button class="add-btn" onclick="addToCart(${product.id})">
+                            Add to Cart
+                        </button>
+                    </div>
+                `;
+
+                productGrid.appendChild(productCard);
+            });
+        }
+
+        // --- FUNCTION: Filter Trigger ---
+        function filterProducts(category) {
+            renderProducts(category);
+        }
+
+        // --- FUNCTION: Add to Cart ---
+        function addToCart(productId) {
+            const product = products.find(p => p.id === productId);
+            const existingItem = cart.find(item => item.id === productId);
+
+            if (existingItem) {
+                existingItem.quantity += 1;
+            } else {
+                cart.push({ ...product, quantity: 1 });
+            }
+
+            updateCartUI();
+            showToast();
+        }
+
+        // --- FUNCTION: Remove/Decrease Item ---
+        function updateQuantity(productId, change) {
+            const itemIndex = cart.findIndex(item => item.id === productId);
+
+            if (itemIndex > -1) {
+                cart[itemIndex].quantity += change;
+
+                if (cart[itemIndex].quantity <= 0) {
+                    cart.splice(itemIndex, 1); // Remove item if quantity is 0
+                }
+            }
+            updateCartUI();
+        }
+
+        // --- FUNCTION: Update Cart Visuals ---
+        function updateCartUI() {
+            // 1. Update Badge Count
+            const totalItems = cart.reduce((sum, item) => sum + item.quantity, 0);
+            cartCountElement.innerText = totalItems;
+
+            // 2. Update Cart List HTML
+            cartItemsContainer.innerHTML = '';
+            let totalPrice = 0;
+
+            if (cart.length === 0) {
+                cartItemsContainer.innerHTML = '<p style="text-align:center; color:#64748b; margin-top:2rem;">Your cart is empty.</p>';
+            } else {
+                cart.forEach(item => {
+                    totalPrice += item.price * item.quantity;
+
+                    const cartItem = document.createElement('div');
+                    cartItem.className = 'cart-item';
+                    cartItem.innerHTML = `
+                        <img src="${item.image}" alt="${item.name}">
+                        <div class="cart-item-details">
+                            <h4>${item.name}</h4>
+                            <div>$${item.price.toFixed(2)}</div>
+                            <div class="cart-controls">
+                                <button class="qty-btn" onclick="updateQuantity(${item.id}, -1)">-</button>
+                                <span>${item.quantity}</span>
+                                <button class="qty-btn" onclick="updateQuantity(${item.id}, 1)">+</button>
+                            </div>
+                        </div>
+                    `;
+                    cartItemsContainer.appendChild(cartItem);
+                });
+            }
+
+            // 3. Update Total Price
+            cartTotalElement.innerText = '$' + totalPrice.toFixed(2);
+        }
+
+        // --- FUNCTION: Toggle Modal Visibility ---
+        function toggleCart() {
+            const isVisible = cartModal.style.display === 'flex';
+            cartModal.style.display = isVisible ? 'none' : 'flex';
+
+            // If opening, ensure clicks outside close it
+            if (!isVisible) {
+                cartModal.onclick = (e) => {
+                    if (e.target === cartModal) toggleCart();
+                };
+            }
+        }
+
+        // --- FUNCTION: Checkout Mockup ---
+        function checkout() {
+            if (cart.length === 0) {
+                alert("Your cart is empty!");
+                return;
+            }
+            alert(`Thank you for your purchase of $${cartTotalElement.innerText}!`);
+            cart = []; // Empty cart
+            updateCartUI();
+            toggleCart();
+        }
+
+        // --- FUNCTION: Show Notification ---
+        function showToast() {
+            toast.classList.add('show');
+            setTimeout(() => {
+                toast.classList.remove('show');
+            }, 2000);
+        }
+
+    </script>
+</body>
+
+</html>
