@@ -20,6 +20,8 @@
 /* --- GLOBAL RESET --- */
 * {
     margin: 0;
+    // iam changes here //
+    margin-left:10px;
     padding: 0;
     box-sizing: border-box;
     font-family: 'Inter', sans-serif;
